@@ -85,7 +85,7 @@ func main() {
 						for _, v := range v.Items {
 							message = fmt.Sprintf("%s- %s. [More](%s).\n", message, v.Title, v.URL)
 						}
-						message = message + "\n:sunny:"
+						message = message + "\n"
 					}
 					message = strings.TrimSuffix(message, "\n")
 					message = strings.TrimSuffix(message, "\n")
