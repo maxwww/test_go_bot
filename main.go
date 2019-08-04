@@ -53,20 +53,20 @@ func main() {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Hi, i'm a ukr news bot.")
 				_, err := bot.Send(msg)
 				if err != nil {
-					log.Fatal(err)
+					log.Print(err)
 				}
 			case "Головні новини":
 				if response, err := http.Get("https://www.ukr.net/ajax/news.json"); err != nil {
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Something going wrong, try to change your question")
 					_, err := bot.Send(msg)
 					if err != nil {
-						log.Fatal(err)
+						log.Print(err)
 					}
 				} else {
 					defer func() {
 						err := response.Body.Close()
 						if err != nil {
-							log.Fatal(err)
+							log.Print(err)
 						}
 					}()
 					contents, _ := ioutil.ReadAll(response.Body)
@@ -75,7 +75,7 @@ func main() {
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Something going wrong, try to change your question")
 						_, err := bot.Send(msg)
 						if err != nil {
-							log.Fatal(err)
+							log.Print(err)
 						}
 					}
 					message := ""
@@ -95,7 +95,7 @@ func main() {
 					msg.ReplyMarkup = Keyboard
 					_, err := bot.Send(msg)
 					if err != nil {
-						log.Fatal(err)
+						log.Print(err)
 					}
 					log.Printf("[%s] %s - sent", update.Message.From.UserName, update.Message.Text)
 				}
@@ -104,13 +104,13 @@ func main() {
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Something going wrong, try to change your question")
 					_, err := bot.Send(msg)
 					if err != nil {
-						log.Fatal(err)
+						log.Print(err)
 					}
 				} else {
 					defer func() {
 						err := response.Body.Close()
 						if err != nil {
-							log.Fatal(err)
+							log.Print(err)
 						}
 					}()
 					contents, _ := ioutil.ReadAll(response.Body)
@@ -119,10 +119,10 @@ func main() {
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Something going wrong, try to change your question")
 						_, err := bot.Send(msg)
 						if err != nil {
-							log.Fatal(err)
+							log.Print(err)
 						}
 					}
-					message := "*Sumy news*\n"
+					message := "*Новини Сумщини*\n"
 					for _, v := range rr.Items {
 						message = fmt.Sprintf("%s- %s. [More](%s).\n", message, v.Title, v.URL)
 					}
@@ -133,7 +133,7 @@ func main() {
 					msg.ReplyMarkup = Keyboard
 					_, err := bot.Send(msg)
 					if err != nil {
-						log.Fatal(err)
+						log.Print(err)
 					}
 					log.Printf("[%s] %s - sent", update.Message.From.UserName, update.Message.Text)
 				}
@@ -143,13 +143,13 @@ func main() {
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Something going wrong, try to change your question")
 					_, err := bot.Send(msg)
 					if err != nil {
-						log.Fatal(err)
+						log.Print(err)
 					}
 				} else {
 					defer func() {
 						err := response.Body.Close()
 						if err != nil {
-							log.Fatal(err)
+							log.Print(err)
 						}
 					}()
 					contents, _ := ioutil.ReadAll(response.Body)
@@ -158,13 +158,13 @@ func main() {
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Something going wrong, try to change your question")
 						_, err := bot.Send(msg)
 						if err != nil {
-							log.Fatal(err)
+							log.Print(err)
 						}
 					}
 					message := "*Погода в Сумах*\n"
 					day := ""
 					for _, v := range WeatherResult.List {
-						tm := time.Unix(int64(v.Dt), int64(WeatherResult.City.Timezone))
+						tm := time.Unix(int64(v.Dt), int64(WeatherResult.City.Timezone)*1e9)
 						rDay := tm.Format("02 January 2006")
 						if day != rDay {
 							day = rDay
@@ -180,7 +180,7 @@ func main() {
 					msg.ReplyMarkup = Keyboard
 					_, err := bot.Send(msg)
 					if err != nil {
-						log.Fatal(err)
+						log.Print(err)
 					}
 					log.Printf("[%s] %s - sent", update.Message.From.UserName, update.Message.Text)
 				}
@@ -189,7 +189,7 @@ func main() {
 				msg.ReplyMarkup = Keyboard
 				_, err := bot.Send(msg)
 				if err != nil {
-					log.Fatal(err)
+					log.Print(err)
 				}
 			}
 		}(update)
