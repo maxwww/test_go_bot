@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-var numericKeyboard = tgbotapi.NewReplyKeyboard(
+var Keyboard = tgbotapi.NewReplyKeyboard(
 	tgbotapi.NewKeyboardButtonRow(
 		tgbotapi.NewKeyboardButton("Головні новини"),
 		tgbotapi.NewKeyboardButton("Новини Сумщини"),
@@ -92,7 +92,7 @@ func main() {
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, message)
 					msg.ParseMode = "markdown"
 					msg.DisableWebPagePreview = true
-					msg.ReplyMarkup = numericKeyboard
+					msg.ReplyMarkup = Keyboard
 					_, err := bot.Send(msg)
 					if err != nil {
 						log.Fatal(err)
@@ -130,7 +130,7 @@ func main() {
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, message)
 					msg.ParseMode = "markdown"
 					msg.DisableWebPagePreview = true
-					msg.ReplyMarkup = numericKeyboard
+					msg.ReplyMarkup = Keyboard
 					_, err := bot.Send(msg)
 					if err != nil {
 						log.Fatal(err)
@@ -178,7 +178,7 @@ func main() {
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, message)
 					msg.ParseMode = "markdown"
 					msg.DisableWebPagePreview = true
-					msg.ReplyMarkup = numericKeyboard
+					msg.ReplyMarkup = Keyboard
 					_, err := bot.Send(msg)
 					if err != nil {
 						log.Fatal(err)
@@ -187,6 +187,7 @@ func main() {
 				}
 			default:
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, Icons["01d"])
+				msg.ReplyMarkup = Keyboard
 				_, err := bot.Send(msg)
 				if err != nil {
 					log.Fatal(err)
