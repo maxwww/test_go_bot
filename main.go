@@ -161,7 +161,6 @@ func main() {
 							log.Fatal(err)
 						}
 					}
-					fmt.Println(WeatherResult)
 					message := "*Погода в Сумах*\n"
 					day := ""
 					for _, v := range WeatherResult.List {
