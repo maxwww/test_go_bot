@@ -81,15 +81,14 @@ func main() {
 			var exists bool
 			row := db.QueryRow("SELECT EXISTS (SELECT id FROM users WHERE id = $1)", update.Message.From.ID)
 			err := row.Scan(&exists)
-			if err != nil {
-				if err == sql.ErrNoRows {
-					_, err = db.Exec(`
+			if err != nil && err != sql.ErrNoRows {
+				log.Print(err)
+			}
+			if !exists {
+				_, err = db.Exec(`
 INSERT INTO users (id, is_bot, first_name, last_name, user_name, language_code, requests )
 VALUES ($1, $2, $3, $4, $5, $6, $7)`, update.Message.From.ID, update.Message.From.IsBot, update.Message.From.FirstName, update.Message.From.LastName, update.Message.From.UserName, update.Message.From.LanguageCode, 1)
-					if err != nil {
-						log.Print(err)
-					}
-				} else {
+				if err != nil {
 					log.Print(err)
 				}
 			} else {
