@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
@@ -11,6 +12,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
 var Keyboard = tgbotapi.NewReplyKeyboard(
@@ -30,7 +33,34 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 	token := os.Getenv("TOKEN")
+	pgUser := os.Getenv("PG_USER")
+	pgBasename := os.Getenv("PG_BASENAME")
+	pgPassword := os.Getenv("PG_PASSWORD")
+	pgHost := os.Getenv("PG_HOST")
 
+	connStr := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable", pgHost, pgBasename, pgUser, pgPassword)
+	db, err := sql.Open("postgres", connStr)
+	defer func() {
+		err := db.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
+	_, err = db.Exec(`
+	CREATE TABLE IF NOT EXISTS users
+	(
+		id  int UNIQUE PRIMARY KEY,
+		is_bot BOOLEAN NOT NULL,
+		first_name VARCHAR(250) NOT NULL,
+		last_name VARCHAR(250),
+		user_name VARCHAR(250),
+		language_code VARCHAR(250),
+		requests int NOT NULL
+	)
+`)
+	if err != nil {
+		log.Fatal(err)
+	}
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		log.Fatal(err)
@@ -48,6 +78,30 @@ func main() {
 		log.Printf("[%s] %v - start", update.Message.From.UserName, update.Message.Text)
 
 		go func(update tgbotapi.Update) {
+			var exists bool
+			row := db.QueryRow("SELECT EXISTS (SELECT id FROM users WHERE id = $1)", update.Message.From.ID)
+			err := row.Scan(&exists)
+			if err != nil {
+				if err == sql.ErrNoRows {
+					_, err = db.Exec(`
+INSERT INTO users (id, is_bot, first_name, last_name, user_name, language_code, requests )
+VALUES ($1, $2, $3, $4, $5, $6, $7)`, update.Message.From.ID, update.Message.From.IsBot, update.Message.From.FirstName, update.Message.From.LastName, update.Message.From.UserName, update.Message.From.LanguageCode, 1)
+					if err != nil {
+						log.Print(err)
+					}
+				} else {
+					log.Print(err)
+				}
+			} else {
+				_, err = db.Exec(`
+UPDATE users
+SET requests = requests + 1
+WHERE id = $1;`, update.Message.From.ID)
+				if err != nil {
+					log.Print(err)
+				}
+			}
+
 			switch update.Message.Text {
 			case "/start":
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Hi, i'm a ukr news bot.")

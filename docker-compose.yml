@@ -5,3 +5,31 @@ services:
   bot:
     build: .
     container_name: echo_bot
+    volumes:
+      - .env:/root/.env
+    depends_on:
+      - db
+    links:
+      - db
+
+
+  db:
+    image: postgres
+    container_name: echo_bot_db
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_USER: ${PG_USER}
+    volumes:
+      - ./data:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer
+    container_name: echo_bot_adminer
+    restart: always
+    depends_on:
+      - db
+    links:
+      - db
+    ports:
+      - ${ADMINER_PORT}:8080
