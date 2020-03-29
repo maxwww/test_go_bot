@@ -20,10 +20,12 @@ var Keyboard = tgbotapi.NewReplyKeyboard(
 	tgbotapi.NewKeyboardButtonRow(
 		tgbotapi.NewKeyboardButton("Головні новини"),
 		tgbotapi.NewKeyboardButton("Всі новини"),
+		tgbotapi.NewKeyboardButton("Новини Сумщини"),
 	),
 	tgbotapi.NewKeyboardButtonRow(
 		tgbotapi.NewKeyboardButton("Погода"),
-		tgbotapi.NewKeyboardButton("Новини Сумщини"),
+		tgbotapi.NewKeyboardButton("Погода в селі Божок"),
+		tgbotapi.NewKeyboardButton("Налаштування"),
 	),
 )
 
@@ -259,6 +261,53 @@ WHERE id = $1;`, update.Message.From.ID)
 						}
 					}
 					message := "*Погода в Сумах*\n"
+					day := ""
+					for _, v := range WeatherResult.List {
+						tm := time.Unix(int64(v.Dt), int64(WeatherResult.City.Timezone)*1e9)
+						rDay := tm.Format("02 January 2006")
+						if day != rDay {
+							day = rDay
+							message = fmt.Sprintf("%s*%s*\n", message, day)
+						}
+						message = fmt.Sprintf("%s%s *%+d*℃ %s %s %s\n", message, tm.Format("15:04"), int64(v.Main.Temp), Icons[v.Weather[0].Icon], v.Weather[0].Description, GetWindIcon(&v.Wind))
+
+					}
+					message = strings.TrimSuffix(message, "\n")
+					msg := tgbotapi.NewMessage(update.Message.Chat.ID, message)
+					msg.ParseMode = "markdown"
+					msg.DisableWebPagePreview = true
+					msg.ReplyMarkup = Keyboard
+					_, err := bot.Send(msg)
+					if err != nil {
+						log.Print(err)
+					}
+					log.Printf("[%s] %s - sent", update.Message.From.UserName, update.Message.Text)
+				}
+			case "Погода в селі Божок":
+				api_key := os.Getenv("WEATHER_TOKEN")
+				if response, err := http.Get("http://api.openweathermap.org/data/2.5/forecast?id=704000&units=metric&lang=ua&appid=" + api_key); err != nil {
+					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Something going wrong, try to change your question")
+					_, err := bot.Send(msg)
+					if err != nil {
+						log.Print(err)
+					}
+				} else {
+					defer func() {
+						err := response.Body.Close()
+						if err != nil {
+							log.Print(err)
+						}
+					}()
+					contents, _ := ioutil.ReadAll(response.Body)
+					WeatherResult := &WeatherForecastResult{}
+					if err = json.Unmarshal([]byte(contents), WeatherResult); err != nil {
+						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Something going wrong, try to change your question")
+						_, err := bot.Send(msg)
+						if err != nil {
+							log.Print(err)
+						}
+					}
+					message := "*Погода в селі Божок*\n"
 					day := ""
 					for _, v := range WeatherResult.List {
 						tm := time.Unix(int64(v.Dt), int64(WeatherResult.City.Timezone)*1e9)
