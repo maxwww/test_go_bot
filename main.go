@@ -19,11 +19,11 @@ import (
 var Keyboard = tgbotapi.NewReplyKeyboard(
 	tgbotapi.NewKeyboardButtonRow(
 		tgbotapi.NewKeyboardButton("Головні новини"),
-		tgbotapi.NewKeyboardButton("Новини Сумщини"),
+		tgbotapi.NewKeyboardButton("Всі новини"),
 	),
 	tgbotapi.NewKeyboardButtonRow(
 		tgbotapi.NewKeyboardButton("Погода"),
-		tgbotapi.NewKeyboardButton("Налаштування"),
+		tgbotapi.NewKeyboardButton("Новини Сумщини"),
 	),
 )
 
@@ -124,6 +124,50 @@ WHERE id = $1;`, update.Message.From.ID)
 					}()
 					contents, _ := ioutil.ReadAll(response.Body)
 					rr := &RequestResults{}
+					if err = json.Unmarshal([]byte(contents), rr); err != nil {
+						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Something going wrong, try to change your question")
+						_, err := bot.Send(msg)
+						if err != nil {
+							log.Print(err)
+						}
+					}
+					message := ""
+					for _, v := range rr.Results {
+						message = fmt.Sprintf("%s*%s*\n", message, v.Title)
+
+						for _, v := range v.Items {
+							message = fmt.Sprintf("%s- %s. [More](%s).\n", message, v.Title, v.URL)
+						}
+						message = message + "\n"
+					}
+					message = strings.TrimSuffix(message, "\n")
+					message = strings.TrimSuffix(message, "\n")
+					msg := tgbotapi.NewMessage(update.Message.Chat.ID, message)
+					msg.ParseMode = "markdown"
+					msg.DisableWebPagePreview = true
+					msg.ReplyMarkup = Keyboard
+					_, err := bot.Send(msg)
+					if err != nil {
+						log.Print(err)
+					}
+					log.Printf("[%s] %s - sent", update.Message.From.UserName, update.Message.Text)
+				}
+			case "Всі новини":
+				if response, err := http.Get("https://www.ukr.net/ajax/news.json"); err != nil {
+					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Something going wrong, try to change your question")
+					_, err := bot.Send(msg)
+					if err != nil {
+						log.Print(err)
+					}
+				} else {
+					defer func() {
+						err := response.Body.Close()
+						if err != nil {
+							log.Print(err)
+						}
+					}()
+					contents, _ := ioutil.ReadAll(response.Body)
+					rr := &ExtendedRequestResults{}
 					if err = json.Unmarshal([]byte(contents), rr); err != nil {
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Something going wrong, try to change your question")
 						_, err := bot.Send(msg)
@@ -263,6 +307,10 @@ type RequestResults struct {
 	Results []Result
 }
 
+type ExtendedRequestResults struct {
+	Results []Result
+}
+
 type RegionResult struct {
 	Items []Item
 }
@@ -316,6 +364,29 @@ func (rr *RequestResults) UnmarshalJSON(bs []byte) error {
 
 			}
 			rr.Results = append(rr.Results, Result{aNew["title"].(string), items})
+		}
+	}
+
+	return nil
+}
+
+func (rr *ExtendedRequestResults) UnmarshalJSON(bs []byte) error {
+	responseMap := make(map[string]interface{})
+	if err := json.Unmarshal(bs, &responseMap); err != nil {
+		return err
+	}
+
+	for _, v := range responseMap["news"].([]interface{}) {
+		aNew := v.(map[string]interface{})
+		switch aNew["id"].(float64) {
+		case 13, 12, 1, 5, 7, 22, 4, 14, 21:
+			items := []Item{}
+			for _, v := range aNew["items"].([]interface{}) {
+				itemMap := v.(map[string]interface{})
+				items = append(items, Item{strings.ReplaceAll(itemMap["title"].(string), "&#039;", "ʼ"), strings.ReplaceAll(itemMap["url"].(string), "&#039;", "ʼ")})
+
+			}
+			rr.Results = append(rr.Results, Result{strings.ReplaceAll(aNew["title"].(string), "&#039;", "ʼ"), items})
 		}
 	}
 
